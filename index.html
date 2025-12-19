@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Northern Ireland Disease Prevalence Dashboard 2025</title>
+  <!-- Simple styles for layout -->
+  <link rel="stylesheet" href="style.css">
+  <!-- D3.js library -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <!-- d3-geo-voronoi for Voronoi polygons on a sphere -->
+  <script src="https://cdn.jsdelivr.net/npm/d3-geo-voronoi@1"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Northern Ireland Disease Prevalence (2025)</h1>
+    <!-- Selector for choosing a clinical register -->
+    <div class="controls">
+      <label for="condition-select">Select register:</label>
+      <select id="condition-select"></select>
+    </div>
+    <!-- Score cards showing summary statistics for the selected register -->
+    <div class="cards">
+      <div class="card">
+        <div class="card-title">Total patients</div>
+        <div class="card-value" id="card-total">–</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Prevalence per 1,000</div>
+        <div class="card-value" id="card-prev">–</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Prevalence per 1,000 (50+)</div>
+        <div class="card-value" id="card-prev50">–</div>
+      </div>
+    </div>
+    <!-- Map container -->
+    <div id="map-container">
+      <svg id="map" width="800" height="600"></svg>
+      <div id="legend"></div>
+    </div>
+    <!-- Table container -->
+    <div id="table-container">
+      <table id="data-table">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
