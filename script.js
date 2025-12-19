@@ -17,6 +17,11 @@ d3.json('ni_prevalence_data.json').then(data => {
     .attr('value', d => d)
     .text(d => d);
 
+  // Variables to support table pagination
+  let currentTableData = [];
+  let currentPage = 1;
+  const pageSize = 10;
+
   // Set initial selection to first condition
   const initialCondition = conditions[0];
   select.property('value', initialCondition);
@@ -31,6 +36,13 @@ d3.json('ni_prevalence_data.json').then(data => {
   /**
    * Update the cards, map, and table based on the selected register
    * @param {string} condition - name of the clinical register
+   */
+  // Note: pagination state is declared above to ensure it is defined before
+  // updateDashboard is first called.
+
+  /**
+   * Rebuild cards, table and map when the selected condition changes.
+   * Resets pagination state.
    */
   function updateDashboard(condition) {
     // Update score cards
@@ -59,11 +71,12 @@ d3.json('ni_prevalence_data.json').then(data => {
     }
 
     // Sort features by number of patients for the table
-    const sortedFeatures = features.slice().sort((a, b) => d3.descending(a.patients, b.patients));
-
-    // Update table
-    updateTable(sortedFeatures);
-
+    currentTableData = features.slice().sort((a, b) => d3.descending(a.patients, b.patients));
+    // Reset to first page whenever condition changes
+    currentPage = 1;
+    // Update table and pagination
+    updateTable();
+    renderPagination();
     // Update map
     updateMap(features);
   }
@@ -72,7 +85,10 @@ d3.json('ni_prevalence_data.json').then(data => {
    * Build or update the interactive table listing practices and prevalence
    * @param {Array<Object>} rowsData
    */
-  function updateTable(rowsData) {
+  /**
+   * Build or update the interactive table for the current page of data
+   */
+  function updateTable() {
     const table = d3.select('#data-table');
     // Header
     const thead = table.select('thead');
@@ -85,12 +101,16 @@ d3.json('ni_prevalence_data.json').then(data => {
       .enter()
       .append('th')
       .text(d => d);
+    // Determine the slice of rows for the current page
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageData = currentTableData.slice(start, end);
     // Body
     const tbody = table.select('tbody');
-    const rows = tbody.selectAll('tr').data(rowsData, d => d.id);
+    const rows = tbody.selectAll('tr').data(pageData, d => d.id);
     rows.exit().remove();
     const newRows = rows.enter().append('tr');
-    // Name
+    // Four columns
     newRows.append('td');
     newRows.append('td');
     newRows.append('td');
@@ -109,6 +129,52 @@ d3.json('ni_prevalence_data.json').then(data => {
     allRows
       .select('td:nth-child(4)')
       .text(d => d.prevalence50 != null ? formatDecimal(d.prevalence50) : '–');
+  }
+
+  /**
+   * Render pagination controls based on the current table data and page state
+   */
+  function renderPagination() {
+    const totalPages = Math.ceil(currentTableData.length / pageSize);
+    const container = d3.select('#pagination');
+    container.selectAll('*').remove();
+    if (totalPages <= 1) return; // No pagination needed
+    // Previous button
+    container
+      .append('button')
+      .text('Prev')
+      .attr('disabled', currentPage === 1 ? true : null)
+      .on('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          updateTable();
+          renderPagination();
+        }
+      });
+    // Page numbers
+    for (let p = 1; p <= totalPages; p++) {
+      container
+        .append('span')
+        .attr('class', 'page-number' + (p === currentPage ? ' active' : ''))
+        .text(p)
+        .on('click', () => {
+          currentPage = p;
+          updateTable();
+          renderPagination();
+        });
+    }
+    // Next button
+    container
+      .append('button')
+      .text('Next')
+      .attr('disabled', currentPage === totalPages ? true : null)
+      .on('click', () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          updateTable();
+          renderPagination();
+        }
+      });
   }
 
   /**
@@ -137,11 +203,18 @@ d3.json('ni_prevalence_data.json').then(data => {
       return { ...d, x, y };
     });
 
+    // Compute a convex hull around the practice points to approximate the Northern Ireland boundary.
+    const hullPoints = d3.polygonHull(projectedPoints.map(d => [d.x, d.y]));
+
+    // Compute colour scale based on prevalence
+
     // Compute colour scale based on prevalence
     const prevalenceValues = projectedPoints.map(d => d.prevalence);
+    // Define a custom purple colour palette (light to dark) inspired by PCRNI branding
+    const purplePalette = ['#efedf5','#dadaeb','#bcbddc','#9e9ac8','#807dba','#6a51a3','#54278f'];
     const colourScale = d3.scaleQuantile()
       .domain(prevalenceValues)
-      .range(d3.schemeBlues[7]);
+      .range(purplePalette);
 
     // Generate Voronoi diagram
     const delaunay = d3.Delaunay.from(projectedPoints, d => d.x, d => d.y);
@@ -172,6 +245,16 @@ d3.json('ni_prevalence_data.json').then(data => {
       .on('mouseout', () => {
         tooltip.style('opacity', 0);
       });
+
+    // Draw boundary hull if it exists
+    if (hullPoints) {
+      svg.append('path')
+        .datum(hullPoints)
+        .attr('d', d3.line())
+        .attr('fill', 'none')
+        .attr('stroke', '#333')
+        .attr('stroke-width', 1.5);
+    }
 
     // Draw legend
     const legend = d3.select('#legend');
