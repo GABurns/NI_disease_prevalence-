@@ -61,14 +61,56 @@ d3.json('ni_prevalence_data.json').then(data => {
     }
 
     // Sort features by number of patients for the table
-    currentTableData = features.slice().sort((a, b) => d3.descending(a.patients, b.patients));
-    // Reset to first page whenever condition changes
-    currentPage = 1;
-    // Update table and pagination
-    updateTable();
-    renderPagination();
+    const sortedFeatures = features.slice().sort((a, b) => d3.descending(a.patients, b.patients));
+
+    // Update table
+    updateTable(sortedFeatures);
+
     // Update map
     updateMap(features);
+  }
+
+  /**
+   * Build or update the interactive table listing practices and prevalence
+   * @param {Array<Object>} rowsData
+   */
+  function updateTable(rowsData) {
+    const table = d3.select('#data-table');
+    // Header
+    const thead = table.select('thead');
+    thead.selectAll('tr').remove();
+    const headerRow = thead.append('tr');
+    const headers = ['Practice', 'Patients', 'Prevalence per 1,000', 'Prevalence per 1,000 (50+)'];
+    headerRow
+      .selectAll('th')
+      .data(headers)
+      .enter()
+      .append('th')
+      .text(d => d);
+    // Body
+    const tbody = table.select('tbody');
+    const rows = tbody.selectAll('tr').data(rowsData, d => d.id);
+    rows.exit().remove();
+    const newRows = rows.enter().append('tr');
+    // Name
+    newRows.append('td');
+    newRows.append('td');
+    newRows.append('td');
+    newRows.append('td');
+    // Merge rows
+    const allRows = newRows.merge(rows);
+    allRows
+      .select('td:nth-child(1)')
+      .text(d => d.name);
+    allRows
+      .select('td:nth-child(2)')
+      .text(d => formatNumber(d.patients));
+    allRows
+      .select('td:nth-child(3)')
+      .text(d => formatDecimal(d.prevalence));
+    allRows
+      .select('td:nth-child(4)')
+      .text(d => d.prevalence50 != null ? formatDecimal(d.prevalence50) : '–');
   }
 
   /**
@@ -97,18 +139,11 @@ d3.json('ni_prevalence_data.json').then(data => {
       return { ...d, x, y };
     });
 
-    // Compute a convex hull around the practice points to approximate the Northern Ireland boundary.
-    const hullPoints = d3.polygonHull(projectedPoints.map(d => [d.x, d.y]));
-
-    // Compute colour scale based on prevalence
-
     // Compute colour scale based on prevalence
     const prevalenceValues = projectedPoints.map(d => d.prevalence);
-    // Define a custom purple colour palette (light to dark) inspired by PCRNI branding
-    const purplePalette = ['#efedf5','#dadaeb','#bcbddc','#9e9ac8','#807dba','#6a51a3','#54278f'];
     const colourScale = d3.scaleQuantile()
       .domain(prevalenceValues)
-      .range(purplePalette);
+      .range(d3.schemeBlues[7]);
 
     // Generate Voronoi diagram
     const delaunay = d3.Delaunay.from(projectedPoints, d => d.x, d => d.y);
@@ -139,16 +174,6 @@ d3.json('ni_prevalence_data.json').then(data => {
       .on('mouseout', () => {
         tooltip.style('opacity', 0);
       });
-
-    // Draw boundary hull if it exists
-    if (hullPoints) {
-      svg.append('path')
-        .datum(hullPoints)
-        .attr('d', d3.line())
-        .attr('fill', 'none')
-        .attr('stroke', '#333')
-        .attr('stroke-width', 1.5);
-    }
 
     // Draw legend
     const legend = d3.select('#legend');
