@@ -4,8 +4,10 @@
 const formatNumber = d3.format(',');
 const formatDecimal = d3.format('.2f');
 
-// Load the pre-computed data (JSON generated in advance)
-d3.json('ni_prevalence_data.json').then(data => {
+Promise.all([
+  d3.json('ni_prevalence_data.json'),
+  d3.json('data/ni_boundary.geojson') // add this GeoJSON to your repo (placeholder provided)
+]).then(([data, niBoundary]) => {
   const conditions = Object.keys(data.condition_data).sort();
   const select = d3.select('#condition-select');
   // Populate the drop‑down selector
@@ -56,6 +58,7 @@ d3.json('ni_prevalence_data.json').then(data => {
         latitude: lat,
         longitude: lon,
         prevalence: condData.prevalence_per_1000,
+        prevalence50: condData.prevalence_per_1000_50plus, // if available
         patients: condData.patients
       });
     }
@@ -142,20 +145,47 @@ d3.json('ni_prevalence_data.json').then(data => {
     // Compute colour scale based on prevalence
     const prevalenceValues = projectedPoints.map(d => d.prevalence);
     const colourScale = d3.scaleQuantile()
-      .domain(prevalenceValues)
+      .domain(prevalenceValues.length ? prevalenceValues : [0, 1])
       .range(d3.schemeBlues[7]);
 
     // Generate Voronoi diagram
     const delaunay = d3.Delaunay.from(projectedPoints, d => d.x, d => d.y);
     const voronoi = delaunay.voronoi([0, 0, width, height]);
 
+    // Create geoPath for drawing/clipping the NI boundary using same projection
+    const geoPath = d3.geoPath().projection(projection);
+
+    // Create clipPath from NI boundary
+    const defs = svg.append('defs');
+    const clip = defs.append('clipPath')
+      .attr('id', 'ni-clip');
+
+    // NI boundary might be FeatureCollection or Geometry; handle both
+    if (niBoundary.type === 'FeatureCollection') {
+      niBoundary.features.forEach((f, i) => {
+        clip.append('path')
+          .attr('d', geoPath(f))
+          .attr('vector-effect', 'non-scaling-stroke');
+      });
+    } else {
+      // single Feature or Geometry
+      clip.append('path')
+        .attr('d', geoPath(niBoundary))
+        .attr('vector-effect', 'non-scaling-stroke');
+    }
+
     // Tooltip
     const tooltip = d3.select('body').append('div')
       .attr('class', 'tooltip')
       .style('opacity', 0);
 
-    // Draw each cell
-    svg.append('g')
+    // Group for cells that will be clipped to NI
+    const cellsG = svg.append('g')
+      .attr('class', 'voronoi-cells')
+      .attr('clip-path', 'url(#ni-clip)');
+
+    // Draw each cell into clipped group
+    cellsG
       .selectAll('path')
       .data(projectedPoints)
       .enter()
@@ -175,10 +205,30 @@ d3.json('ni_prevalence_data.json').then(data => {
         tooltip.style('opacity', 0);
       });
 
+    // Draw the NI boundary outline on top (for clarity)
+    if (niBoundary.type === 'FeatureCollection') {
+      svg.append('g').attr('class', 'ni-boundary')
+        .selectAll('path')
+        .data(niBoundary.features)
+        .enter()
+        .append('path')
+        .attr('d', geoPath)
+        .attr('fill', 'none')
+        .attr('stroke', '#333')
+        .attr('stroke-width', 1);
+    } else {
+      svg.append('path')
+        .datum(niBoundary)
+        .attr('d', geoPath)
+        .attr('fill', 'none')
+        .attr('stroke', '#333')
+        .attr('stroke-width', 1);
+    }
+
     // Draw legend
     const legend = d3.select('#legend');
     legend.selectAll('*').remove();
-    const quantiles = colourScale.quantiles();
+    const quantiles = colourScale.quantiles ? colourScale.quantiles() : [];
     // Build legend items: there are n bins equal to range length
     const colours = colourScale.range();
     const bins = [];
