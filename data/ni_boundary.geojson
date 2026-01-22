@@ -1,0 +1,26 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Northern Ireland (approx bounding polygon - placeholder)" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-8.2, 55.4],
+            [-7.0, 55.3],
+            [-6.0, 55.4],
+            [-5.3, 54.9],
+            [-5.6, 54.5],
+            [-5.8, 54.2],
+            [-6.8, 54.1],
+            [-7.6, 54.2],
+            [-8.0, 54.6],
+            [-8.2, 55.4]
+          ]
+        ]
+      }
+    }
+  ]
+}
