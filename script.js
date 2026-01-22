@@ -17,11 +17,6 @@ d3.json('ni_prevalence_data.json').then(data => {
     .attr('value', d => d)
     .text(d => d);
 
-  // Variables to support table pagination
-  let currentTableData = [];
-  let currentPage = 1;
-  const pageSize = 10;
-
   // Set initial selection to first condition
   const initialCondition = conditions[0];
   select.property('value', initialCondition);
@@ -37,9 +32,6 @@ d3.json('ni_prevalence_data.json').then(data => {
    * Update the cards, map, and table based on the selected register
    * @param {string} condition - name of the clinical register
    */
-  // Note: pagination state is declared above to ensure it is defined before
-  // updateDashboard is first called.
-
   /**
    * Rebuild cards, table and map when the selected condition changes.
    * Resets pagination state.
@@ -49,7 +41,6 @@ d3.json('ni_prevalence_data.json').then(data => {
     const totals = data.condition_totals[condition];
     d3.select('#card-total').text(formatNumber(totals.total_patients));
     d3.select('#card-prev').text(formatDecimal(totals.prevalence_per_1000));
-    d3.select('#card-prev50').text(formatDecimal(totals.prevalence_over50_per_1000));
 
     // Prepare features (only practices with coordinates and data for this condition)
     const features = [];
@@ -65,7 +56,6 @@ d3.json('ni_prevalence_data.json').then(data => {
         latitude: lat,
         longitude: lon,
         prevalence: condData.prevalence_per_1000,
-        prevalence50: condData.prevalence_over50_per_1000,
         patients: condData.patients
       });
     }
@@ -79,102 +69,6 @@ d3.json('ni_prevalence_data.json').then(data => {
     renderPagination();
     // Update map
     updateMap(features);
-  }
-
-  /**
-   * Build or update the interactive table listing practices and prevalence
-   * @param {Array<Object>} rowsData
-   */
-  /**
-   * Build or update the interactive table for the current page of data
-   */
-  function updateTable() {
-    const table = d3.select('#data-table');
-    // Header
-    const thead = table.select('thead');
-    thead.selectAll('tr').remove();
-    const headerRow = thead.append('tr');
-    const headers = ['Practice', 'Patients', 'Prevalence per 1,000', 'Prevalence per 1,000 (50+)'];
-    headerRow
-      .selectAll('th')
-      .data(headers)
-      .enter()
-      .append('th')
-      .text(d => d);
-    // Determine the slice of rows for the current page
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    const pageData = currentTableData.slice(start, end);
-    // Body
-    const tbody = table.select('tbody');
-    const rows = tbody.selectAll('tr').data(pageData, d => d.id);
-    rows.exit().remove();
-    const newRows = rows.enter().append('tr');
-    // Four columns
-    newRows.append('td');
-    newRows.append('td');
-    newRows.append('td');
-    newRows.append('td');
-    // Merge rows
-    const allRows = newRows.merge(rows);
-    allRows
-      .select('td:nth-child(1)')
-      .text(d => d.name);
-    allRows
-      .select('td:nth-child(2)')
-      .text(d => formatNumber(d.patients));
-    allRows
-      .select('td:nth-child(3)')
-      .text(d => formatDecimal(d.prevalence));
-    allRows
-      .select('td:nth-child(4)')
-      .text(d => d.prevalence50 != null ? formatDecimal(d.prevalence50) : '–');
-  }
-
-  /**
-   * Render pagination controls based on the current table data and page state
-   */
-  function renderPagination() {
-    const totalPages = Math.ceil(currentTableData.length / pageSize);
-    const container = d3.select('#pagination');
-    container.selectAll('*').remove();
-    if (totalPages <= 1) return; // No pagination needed
-    // Previous button
-    container
-      .append('button')
-      .text('Prev')
-      .attr('disabled', currentPage === 1 ? true : null)
-      .on('click', () => {
-        if (currentPage > 1) {
-          currentPage--;
-          updateTable();
-          renderPagination();
-        }
-      });
-    // Page numbers
-    for (let p = 1; p <= totalPages; p++) {
-      container
-        .append('span')
-        .attr('class', 'page-number' + (p === currentPage ? ' active' : ''))
-        .text(p)
-        .on('click', () => {
-          currentPage = p;
-          updateTable();
-          renderPagination();
-        });
-    }
-    // Next button
-    container
-      .append('button')
-      .text('Next')
-      .attr('disabled', currentPage === totalPages ? true : null)
-      .on('click', () => {
-        if (currentPage < totalPages) {
-          currentPage++;
-          updateTable();
-          renderPagination();
-        }
-      });
   }
 
   /**

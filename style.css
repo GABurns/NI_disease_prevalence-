@@ -8,7 +8,7 @@ body {
   font-family: 'Poppins', Arial, sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f4f5f7; /* light background similar to PCRNI site */
+  background-color: transparent; /* light background similar to PCRNI site */
   color: #2c3e50; /* dark blue-grey text */
 }
 
@@ -151,87 +151,6 @@ h1 {
   margin-right: 0.25rem;
   border: 1px solid #ccc;
   border-radius: 3px;
-}
-
-/* Table styling */
-#data-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 0.5rem;
-  background-color: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-#data-table thead th {
-  background-color: #f0f0f0;
-  border-bottom: 2px solid #ddd;
-  padding: 0.6rem 0.5rem;
-  text-align: left;
-  font-size: 0.85rem;
-  color: #5a4ba3;
-  font-weight: 600;
-}
-
-#data-table tbody td {
-  border-bottom: 1px solid #f0f0f0;
-  padding: 0.5rem;
-  font-size: 0.8rem;
-  color: #2c3e50;
-}
-
-#data-table tbody tr:nth-child(even) {
-  background-color: #fafafa;
-}
-
-/* Pagination controls */
-#pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 0.5rem;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-#pagination button {
-  padding: 0.3rem 0.6rem;
-  border: 1px solid #6f2c91;
-  background-color: #6f2c91;
-  color: #fff;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-#pagination button:hover:not(:disabled) {
-  background-color: #5a4ba3;
-}
-
-#pagination button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-#pagination .page-number {
-  padding: 0.3rem 0.6rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-#pagination .page-number.active {
-  background-color: #e8e0ee;
-  border-color: #6f2c91;
-  color: #6f2c91;
-}
-
-#pagination .page-number:hover {
-  background-color: #f2ecf8;
 }
 
 /* Tooltip styles */
