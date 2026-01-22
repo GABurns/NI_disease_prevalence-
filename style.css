@@ -89,26 +89,7 @@ h1 {
   border: 1px solid #ccc;
 }
 
-#data-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-  background-color: #fff;
-}
 
-#data-table thead th {
-  background-color: #f0f0f0;
-  border-bottom: 2px solid #ddd;
-  padding: 0.5rem;
-  text-align: left;
-  font-size: 0.9rem;
-}
-
-#data-table tbody td {
-  border-bottom: 1px solid #eee;
-  padding: 0.5rem;
-  font-size: 0.85rem;
-}
 
 /* Tooltip styles */
 .tooltip {
